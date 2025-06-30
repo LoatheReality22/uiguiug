@@ -68,12 +68,12 @@ export default function App() {
             user_metadata: { full_name: 'Demo Admin' },
             id: 'demo-user' 
           });
-          setMessage('✅ Demo login successful!');
+          setMessage('');
         } else {
-          setMessage(`❌ Login failed: ${error.message}\n\nTry demo: admin@hyam.com / admin123`);
+          setMessage(` Login failed: ${error.message}\n\n`);
         }
       } else {
-        setMessage('✅ Login successful!');
+        setMessage('Login successful!');
         // User will be set automatically via the auth state change listener
       }
     }
@@ -120,7 +120,7 @@ export default function App() {
 
           {message && (
             <div className={`px-4 py-3 rounded-2xl text-sm mb-6 ${
-              message.includes('❌') 
+              message.includes('') 
                 ? 'bg-red-50 text-red-800 border border-red-200' 
                 : 'bg-green-50 text-green-800 border border-green-200'
             }`}>
