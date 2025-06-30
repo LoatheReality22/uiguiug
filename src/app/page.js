@@ -251,7 +251,7 @@ export default function App() {
     Your secure portal for managing advocacy services and client relationships.
   </p>
 </div>
-            </p>
+            
           </div>
         </div>
       </main>
