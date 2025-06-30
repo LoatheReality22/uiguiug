@@ -1,14 +1,107 @@
 "use client";
 
-import React, { useState } from 'react';
-
-// Supabase configuration
-const SUPABASE_URL = 'https://itdxqdjybaekwqsagynr.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0ZHhxZGp5YmFla3dxc2FneW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNDU1NTIsImV4cCI6MjA2NjgyMTU1Mn0.IPInwhJoFPyeoQuPrEdSm0v87aD5O4dZLJ0YL_neur8';
+import React, { useState, useEffect } from 'react';
+import { supabase, signUp, signIn, signOut } from '../lib/supabase';
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [isSignup, setIsSignup] = useState(false); // Toggle between login/signup
+  const [isSignup, setIsSignup] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  // Check if user is already logged in on page load
+  useEffect(() => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setUser(session.user);
+      }
+      setIsInitialLoading(false);
+    };
+
+    getSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session) {
+          setUser(session.user);
+        } else {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    const formData = new FormData(e.target);
+    const email = formData.get('email');
+    const password = formData.get('password');
+    const fullName = formData.get('fullName');
+
+    if (isSignup) {
+      // Sign up
+      const { data, error } = await signUp(email, password, fullName);
+      
+      if (error) {
+        setMessage(`❌ Signup failed: ${error.message}`);
+      } else {
+        setMessage('✅ Account created! Please check your email to confirm your account.');
+        setIsSignup(false); // Switch to login
+      }
+    } else {
+      // Sign in
+      const { data, error } = await signIn(email, password);
+      
+      if (error) {
+        // Fallback to demo login if Supabase fails
+        if (email === 'admin@hyam.com' && password === 'admin123') {
+          setUser({ 
+            email, 
+            user_metadata: { full_name: 'Demo Admin' },
+            id: 'demo-user' 
+          });
+          setMessage('✅ Demo login successful!');
+        } else {
+          setMessage(`❌ Login failed: ${error.message}\n\nTry demo: admin@hyam.com / admin123`);
+        }
+      } else {
+        setMessage('✅ Login successful!');
+        // User will be set automatically via the auth state change listener
+      }
+    }
+    
+    setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (error) {
+      console.error('Error logging out:', error);
+    }
+    setUser(null);
+  };
+
+  // Show loading spinner while checking auth state
+  if (isInitialLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <span className="text-white font-light text-2xl">H</span>
+          </div>
+          <p className="text-gray-600 font-light">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Auth Component (Login + Signup)
   if (!user) {
@@ -25,76 +118,17 @@ export default function App() {
             </p>
           </div>
 
-          <form onSubmit={async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const email = formData.get('email');
-            const password = formData.get('password');
-            const fullName = formData.get('fullName');
+          {message && (
+            <div className={`px-4 py-3 rounded-2xl text-sm mb-6 ${
+              message.includes('❌') 
+                ? 'bg-red-50 text-red-800 border border-red-200' 
+                : 'bg-green-50 text-green-800 border border-green-200'
+            }`}>
+              {message}
+            </div>
+          )}
 
-            if (isSignup) {
-              // Signup with Supabase
-              try {
-                const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-                  method: 'POST',
-                  headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    email,
-                    password,
-                    data: { full_name: fullName }
-                  })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                  alert('✅ Account created! Please check your email to confirm your account, then login.');
-                  setIsSignup(false); // Switch to login
-                } else {
-                  alert(`❌ Signup failed: ${data.error_description || data.msg}`);
-                }
-              } catch (error) {
-                alert('❌ Network error. Please try again.');
-              }
-            } else {
-              // Login with Supabase
-              try {
-                const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-                  method: 'POST',
-                  headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ email, password })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                  setUser(data.user);
-                  alert('✅ Login successful!');
-                } else {
-                  // Fallback to demo login
-                  if (email === 'admin@hyam.com' && password === 'admin123') {
-                    setUser({ email, name: 'Demo Admin' });
-                  } else {
-                    alert(`❌ Login failed: ${data.error_description || 'Invalid credentials'}\n\nTry demo: admin@hyam.com / admin123`);
-                  }
-                }
-              } catch (error) {
-                // Fallback to demo login
-                if (email === 'admin@hyam.com' && password === 'admin123') {
-                  setUser({ email, name: 'Demo Admin' });
-                } else {
-                  alert('❌ Network error. Try demo: admin@hyam.com / admin123');
-                }
-              }
-            }
-          }} className="space-y-6">
-            
+          <form onSubmit={handleAuth} className="space-y-6">
             {isSignup && (
               <input
                 name="fullName"
@@ -124,15 +158,22 @@ export default function App() {
             
             <button
               type="submit"
-              className="w-full bg-black text-white py-4 rounded-2xl font-light hover:bg-gray-800 transition-all duration-200"
+              disabled={loading}
+              className="w-full bg-black text-white py-4 rounded-2xl font-light hover:bg-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSignup ? 'Create Account' : 'Sign In'}
+              {loading 
+                ? (isSignup ? 'Creating Account...' : 'Signing In...') 
+                : (isSignup ? 'Create Account' : 'Sign In')
+              }
             </button>
           </form>
 
           <div className="text-center mt-6">
             <button
-              onClick={() => setIsSignup(!isSignup)}
+              onClick={() => {
+                setIsSignup(!isSignup);
+                setMessage('');
+              }}
               className="text-gray-600 font-light hover:text-black transition-colors"
             >
               {isSignup 
@@ -165,9 +206,11 @@ export default function App() {
             <h1 className="text-xl font-light text-black">Hyam Movement Portal</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600">Welcome, {user.email}</span>
+            <span className="text-sm text-gray-600">
+              Welcome, {user.user_metadata?.full_name || user.email}
+            </span>
             <button
-              onClick={() => setUser(null)}
+              onClick={handleLogout}
               className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-light transition-colors"
             >
               Logout
@@ -203,10 +246,19 @@ export default function App() {
         </div>
 
         <div className="mt-12 bg-white rounded-3xl p-8 border border-gray-200">
-          <h3 className="text-2xl font-light text-black mb-4">🎉 Authentication System Active</h3>
-          <p className="text-gray-600 font-light">
-            Users can now create accounts and login to access the advocacy portal.
+          <h3 className="text-2xl font-light text-black mb-4">🎉 Supabase Authentication Active</h3>
+          <p className="text-gray-600 font-light mb-4">
+            Users can now create accounts and login using Supabase authentication.
           </p>
+          <div className="bg-gray-50 rounded-2xl p-4">
+            <h4 className="font-medium text-gray-800 mb-2">Current User Info:</h4>
+            <p className="text-sm text-gray-600">Email: {user.email}</p>
+            <p className="text-sm text-gray-600">Name: {user.user_metadata?.full_name || 'Not provided'}</p>
+            <p className="text-sm text-gray-600">User ID: {user.id}</p>
+            <p className="text-sm text-gray-600">
+              Email Confirmed: {user.email_confirmed_at ? '✅ Yes' : '❌ No'}
+            </p>
+          </div>
         </div>
       </main>
     </div>
