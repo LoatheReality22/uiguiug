@@ -238,23 +238,21 @@ export default function App() {
             <p className="text-gray-600 font-light">Track advocacy cases</p>
           </div>
           
-          <div className="bg-white rounded-3xl p-8 border border-gray-200 hover:shadow-lg transition-all duration-300">
-            <div className="text-4xl mb-6">📊</div>
-            <h3 className="text-2xl font-light text-black mb-3">Analytics</h3>
-            <p className="text-gray-600 font-light">View your impact</p>
-          </div>
-        </div>
+<div className="bg-white rounded-3xl p-8 border border-gray-200 hover:shadow-lg transition-all duration-300">
+  <div className="text-4xl mb-6">📊</div>
+  <h3 className="text-2xl font-light text-black mb-3">Analytics</h3>
+  <p className="text-gray-600 font-light">View your impact</p>
+</div>
+</div>
 
-       <div className="mt-12 bg-white rounded-3xl p-8 border border-gray-200">
+<div className="mt-12 bg-white rounded-3xl p-8 border border-gray-200">
   <h3 className="text-2xl font-light text-black mb-4">Welcome to Your Dashboard</h3>
   <p className="text-gray-600 font-light">
     Your secure portal for managing advocacy services and client relationships.
   </p>
 </div>
-            
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+
+</main>
+</div>
+);
 }
