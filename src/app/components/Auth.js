@@ -20,9 +20,9 @@ export default function Auth({ onLogin }) {
     // Simple demo login - replace with real auth later
     if (email === 'admin@hyam.com' && password === 'admin123') {
       onLogin({ email, id: '1', role: 'admin' });
-      setMessage('✅ Login successful!');
+      setMessage(' Login successful!');
     } else {
-      setMessage('❌ Invalid credentials. Try admin@hyam.com / admin123');
+      setMessage(' Invalid credentials. Try admin@hyam.com / admin123');
     }
     
     setLoading(false);
@@ -74,8 +74,8 @@ export default function Auth({ onLogin }) {
         </form>
 
         <div className="text-center">
-          <p className="text-sm text-gray-500">Demo credentials:</p>
-          <p className="text-sm text-gray-600">admin@hyam.com / admin123</p>
+          <p className="text-sm text-gray-500">Hyam Movement</p>
+          <p className="text-sm text-gray-600">2025</p>
         </div>
       </div>
     </div>
