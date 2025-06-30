@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Auth from '../components/Auth';
+import Auth from './components/Auth';
 
 // Your portal component (keeping the same code from before)
 const HyamMovementPortal = ({ user, onLogout }) => {
