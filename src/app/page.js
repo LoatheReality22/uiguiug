@@ -245,18 +245,12 @@ export default function App() {
           </div>
         </div>
 
-        <div className="mt-12 bg-white rounded-3xl p-8 border border-gray-200">
-          <h3 className="text-2xl font-light text-black mb-4">🎉 Supabase Authentication Active</h3>
-          <p className="text-gray-600 font-light mb-4">
-            Users can now create accounts and login using Supabase authentication.
-          </p>
-          <div className="bg-gray-50 rounded-2xl p-4">
-            <h4 className="font-medium text-gray-800 mb-2">Current User Info:</h4>
-            <p className="text-sm text-gray-600">Email: {user.email}</p>
-            <p className="text-sm text-gray-600">Name: {user.user_metadata?.full_name || 'Not provided'}</p>
-            <p className="text-sm text-gray-600">User ID: {user.id}</p>
-            <p className="text-sm text-gray-600">
-              Email Confirmed: {user.email_confirmed_at ? '✅ Yes' : '❌ No'}
+       <div className="mt-12 bg-white rounded-3xl p-8 border border-gray-200">
+  <h3 className="text-2xl font-light text-black mb-4">Welcome to Your Dashboard</h3>
+  <p className="text-gray-600 font-light">
+    Your secure portal for managing advocacy services and client relationships.
+  </p>
+</div>
             </p>
           </div>
         </div>
