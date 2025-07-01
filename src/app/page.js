@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { supabase, signUp, signIn, signOut } from '../../lib/supabase';
+import { supabase, signUp, signIn, signOut } from '@/lib/supabase';
 
 export default function App() {
   const [user, setUser] = useState(null);
