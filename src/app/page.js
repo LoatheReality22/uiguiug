@@ -1,58 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { supabase, signUp, signIn, signOut } from '@/lib/supabase';
+import React, { useState } from 'react';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [isSignup, setIsSignup] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [currentView, setCurrentView] = useState('dashboard'); // dashboard, clients, cases, analytics, admin
+  const [currentView, setCurrentView] = useState('dashboard');
 
-  // Admin emails - add your email here
+  // Admin emails
   const adminEmails = ['admin@hyam.com', 'youremail@domain.com'];
   const isAdmin = user && adminEmails.includes(user.email);
-
-  // Mock data for admin
-  const [users, setUsers] = useState([
-    { id: 1, email: 'john@example.com', name: 'John Doe', role: 'client', created: '2024-01-15' },
-    { id: 2, email: 'jane@example.com', name: 'Jane Smith', role: 'client', created: '2024-01-20' },
-    { id: 3, email: 'admin@hyam.com', name: 'Admin User', role: 'admin', created: '2024-01-01' }
-  ]);
-
-  const [cases, setCases] = useState([
-    { id: 1, title: 'Immigration Case #001', client: 'John Doe', status: 'active', priority: 'high' },
-    { id: 2, title: 'Family Law Case #002', client: 'Jane Smith', status: 'pending', priority: 'medium' },
-    { id: 3, title: 'Business Law Case #003', client: 'Mike Johnson', status: 'completed', priority: 'low' }
-  ]);
-
-  // Check if user is already logged in on page load
-  useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setUser(session.user);
-      }
-      setIsInitialLoading(false);
-    };
-
-    getSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session) {
-          setUser(session.user);
-        } else {
-          setUser(null);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -64,74 +23,35 @@ export default function App() {
     const password = formData.get('password');
     const fullName = formData.get('fullName');
 
-    if (isSignup) {
-      // Sign up
-      const { data, error } = await signUp(email, password, fullName);
-      
-      if (error) {
-        setMessage(`❌ Signup failed: ${error.message}`);
+    // Demo login for now
+    if (email === 'admin@hyam.com' && password === 'admin123') {
+      setUser({ 
+        email, 
+        user_metadata: { full_name: fullName || 'Demo Admin' },
+        id: 'demo-user' 
+      });
+      setMessage('✅ Login successful!');
+    } else if (email && password) {
+      if (isSignup) {
+        setUser({ 
+          email, 
+          user_metadata: { full_name: fullName },
+          id: 'new-user-' + Date.now()
+        });
+        setMessage('✅ Account created and logged in!');
       } else {
-        setMessage('✅ Account created successfully! You can now sign in.');
-        setIsSignup(false);
-      }
-    } else {
-      // Sign in
-      const { data, error } = await signIn(email, password);
-      
-      if (error) {
-        // Fallback to demo login if Supabase fails
-        if (email === 'admin@hyam.com' && password === 'admin123') {
-          setUser({ 
-            email, 
-            user_metadata: { full_name: 'Demo Admin' },
-            id: 'demo-user' 
-          });
-          setMessage('✅ Demo login successful!');
-        } else {
-          setMessage(`❌ Login failed: ${error.message}\n\nTry demo: admin@hyam.com / admin123`);
-        }
-      } else {
-        setMessage('✅ Login successful!');
+        setMessage('❌ Invalid credentials. Try admin@hyam.com / admin123');
       }
     }
     
     setLoading(false);
   };
 
-  const handleLogout = async () => {
-    const { error } = await signOut();
-    if (error) {
-      console.error('Error logging out:', error);
-    }
+  const handleLogout = () => {
     setUser(null);
     setCurrentView('dashboard');
+    setMessage('');
   };
-
-  const deleteUser = (userId) => {
-    setUsers(users.filter(u => u.id !== userId));
-    setMessage('✅ User deleted successfully!');
-    setTimeout(() => setMessage(''), 3000);
-  };
-
-  const updateCaseStatus = (caseId, newStatus) => {
-    setCases(cases.map(c => c.id === caseId ? {...c, status: newStatus} : c));
-    setMessage('✅ Case updated successfully!');
-    setTimeout(() => setMessage(''), 3000);
-  };
-
-  // Show loading spinner while checking auth state
-  if (isInitialLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <span className="text-white font-light text-2xl">H</span>
-          </div>
-          <p className="text-gray-600 font-light">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Auth Component (Login + Signup)
   if (!user) {
@@ -323,23 +243,32 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-white rounded-3xl p-8 border border-gray-200 hover:shadow-lg transition-all duration-300">
+              <button 
+                onClick={() => setCurrentView('clients')}
+                className="bg-white rounded-3xl p-8 border border-gray-200 hover:shadow-lg transition-all duration-300 text-left"
+              >
                 <div className="text-4xl mb-6">👥</div>
                 <h3 className="text-2xl font-light text-black mb-3">Clients</h3>
                 <p className="text-gray-600 font-light">Manage client relationships</p>
-              </div>
+              </button>
               
-              <div className="bg-white rounded-3xl p-8 border border-gray-200 hover:shadow-lg transition-all duration-300">
+              <button 
+                onClick={() => setCurrentView('cases')}
+                className="bg-white rounded-3xl p-8 border border-gray-200 hover:shadow-lg transition-all duration-300 text-left"
+              >
                 <div className="text-4xl mb-6">📋</div>
                 <h3 className="text-2xl font-light text-black mb-3">Cases</h3>
                 <p className="text-gray-600 font-light">Track advocacy cases</p>
-              </div>
+              </button>
               
-              <div className="bg-white rounded-3xl p-8 border border-gray-200 hover:shadow-lg transition-all duration-300">
+              <button 
+                onClick={() => setCurrentView('analytics')}
+                className="bg-white rounded-3xl p-8 border border-gray-200 hover:shadow-lg transition-all duration-300 text-left"
+              >
                 <div className="text-4xl mb-6">📊</div>
                 <h3 className="text-2xl font-light text-black mb-3">Analytics</h3>
                 <p className="text-gray-600 font-light">View your impact</p>
-              </div>
+              </button>
             </div>
           </>
         )}
@@ -350,13 +279,21 @@ export default function App() {
             <h2 className="text-3xl font-light text-black mb-8">Client Management</h2>
             <div className="bg-white rounded-3xl p-8 border border-gray-200">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {users.filter(u => u.role === 'client').map(client => (
-                  <div key={client.id} className="bg-gray-50 rounded-2xl p-6">
-                    <h3 className="font-medium text-black mb-2">{client.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{client.email}</p>
-                    <p className="text-xs text-gray-500">Joined: {client.created}</p>
-                  </div>
-                ))}
+                <div className="bg-gray-50 rounded-2xl p-6">
+                  <h3 className="font-medium text-black mb-2">John Doe</h3>
+                  <p className="text-sm text-gray-600 mb-2">john@example.com</p>
+                  <p className="text-xs text-gray-500">Joined: 2024-01-15</p>
+                </div>
+                <div className="bg-gray-50 rounded-2xl p-6">
+                  <h3 className="font-medium text-black mb-2">Jane Smith</h3>
+                  <p className="text-sm text-gray-600 mb-2">jane@example.com</p>
+                  <p className="text-xs text-gray-500">Joined: 2024-01-20</p>
+                </div>
+                <div className="bg-gray-50 rounded-2xl p-6">
+                  <h3 className="font-medium text-black mb-2">Mike Johnson</h3>
+                  <p className="text-sm text-gray-600 mb-2">mike@example.com</p>
+                  <p className="text-xs text-gray-500">Joined: 2024-02-01</p>
+                </div>
               </div>
             </div>
           </div>
@@ -368,30 +305,48 @@ export default function App() {
             <h2 className="text-3xl font-light text-black mb-8">Case Management</h2>
             <div className="bg-white rounded-3xl p-8 border border-gray-200">
               <div className="space-y-4">
-                {cases.map(caseItem => (
-                  <div key={caseItem.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                    <div>
-                      <h3 className="font-medium text-black">{caseItem.title}</h3>
-                      <p className="text-sm text-gray-600">Client: {caseItem.client}</p>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        caseItem.status === 'active' ? 'bg-green-100 text-green-800' :
-                        caseItem.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {caseItem.status}
-                      </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        caseItem.priority === 'high' ? 'bg-red-100 text-red-800' :
-                        caseItem.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        {caseItem.priority}
-                      </span>
-                    </div>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                  <div>
+                    <h3 className="font-medium text-black">Immigration Case #001</h3>
+                    <p className="text-sm text-gray-600">Client: John Doe</p>
                   </div>
-                ))}
+                  <div className="flex items-center space-x-3">
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      active
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      high
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                  <div>
+                    <h3 className="font-medium text-black">Family Law Case #002</h3>
+                    <p className="text-sm text-gray-600">Client: Jane Smith</p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      pending
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      medium
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                  <div>
+                    <h3 className="font-medium text-black">Business Law Case #003</h3>
+                    <p className="text-sm text-gray-600">Client: Mike Johnson</p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      completed
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      low
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -404,15 +359,15 @@ export default function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <div className="bg-white rounded-3xl p-6 border border-gray-200">
                 <h3 className="text-lg font-medium text-black mb-2">Total Clients</h3>
-                <p className="text-3xl font-light text-black">{users.filter(u => u.role === 'client').length}</p>
+                <p className="text-3xl font-light text-black">12</p>
               </div>
               <div className="bg-white rounded-3xl p-6 border border-gray-200">
                 <h3 className="text-lg font-medium text-black mb-2">Active Cases</h3>
-                <p className="text-3xl font-light text-black">{cases.filter(c => c.status === 'active').length}</p>
+                <p className="text-3xl font-light text-black">8</p>
               </div>
               <div className="bg-white rounded-3xl p-6 border border-gray-200">
                 <h3 className="text-lg font-medium text-black mb-2">Completed Cases</h3>
-                <p className="text-3xl font-light text-black">{cases.filter(c => c.status === 'completed').length}</p>
+                <p className="text-3xl font-light text-black">24</p>
               </div>
               <div className="bg-white rounded-3xl p-6 border border-gray-200">
                 <h3 className="text-lg font-medium text-black mb-2">Success Rate</h3>
@@ -427,51 +382,39 @@ export default function App() {
           <div>
             <h2 className="text-3xl font-light text-black mb-8">🔒 Admin Panel</h2>
             
-            {/* User Management */}
             <div className="bg-white rounded-3xl p-8 border border-gray-200 mb-8">
               <h3 className="text-xl font-medium text-black mb-6">User Management</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 font-medium text-gray-700">Name</th>
-                      <th className="text-left py-3 font-medium text-gray-700">Email</th>
-                      <th className="text-left py-3 font-medium text-gray-700">Role</th>
-                      <th className="text-left py-3 font-medium text-gray-700">Created</th>
-                      <th className="text-left py-3 font-medium text-gray-700">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map(user => (
-                      <tr key={user.id} className="border-b border-gray-100">
-                        <td className="py-3 text-gray-900">{user.name}</td>
-                        <td className="py-3 text-gray-600">{user.email}</td>
-                        <td className="py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            user.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="py-3 text-gray-600">{user.created}</td>
-                        <td className="py-3">
-                          {user.role !== 'admin' && (
-                            <button
-                              onClick={() => deleteUser(user.id)}
-                              className="text-red-600 hover:text-red-800 text-sm font-medium"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                  <div>
+                    <h4 className="font-medium text-black">John Doe</h4>
+                    <p className="text-sm text-gray-600">john@example.com</p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    client
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                  <div>
+                    <h4 className="font-medium text-black">Jane Smith</h4>
+                    <p className="text-sm text-gray-600">jane@example.com</p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    client
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                  <div>
+                    <h4 className="font-medium text-black">Admin User</h4>
+                    <p className="text-sm text-gray-600">admin@hyam.com</p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    admin
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* System Settings */}
             <div className="bg-white rounded-3xl p-8 border border-gray-200">
               <h3 className="text-xl font-medium text-black mb-6">System Settings</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
