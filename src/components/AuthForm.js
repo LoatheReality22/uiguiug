@@ -1,6 +1,8 @@
+'use client'
+
 import { useState } from 'react'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
-import { authenticateUser } from '../lib/auth'
+import { signIn, signUp } from '../lib/supabase'
 
 export default function AuthForm({ onLogin }) {
   const [isSignup, setIsSignup] = useState(false)
@@ -20,22 +22,34 @@ export default function AuthForm({ onLogin }) {
 
     try {
       if (isSignup) {
-        // For demo purposes, create a new user
-        const newUser = {
-          id: `user_${Date.now()}`,
-          email: formData.email,
-          name: formData.fullName,
-          role: 'client',
-          isAdmin: false
+        const { data, error } = await signUp(formData.email, formData.password, formData.fullName)
+        if (error) {
+          setError(error.message)
+        } else if (data.user) {
+          // For demo, auto-login after signup
+          const userData = {
+            id: data.user.id,
+            email: data.user.email,
+            name: formData.fullName,
+            role: 'client',
+            isAdmin: false
+          }
+          onLogin(userData)
         }
-        onLogin(newUser)
       } else {
-        // Authenticate existing user
-        const user = authenticateUser(formData.email, formData.password)
-        if (user) {
-          onLogin(user)
-        } else {
-          setError('Invalid email or password. Try harley@hyammovement.com / admin123')
+        const { data, error } = await signIn(formData.email, formData.password)
+        if (error) {
+          setError(error.message)
+        } else if (data.user) {
+          const isAdmin = data.profile?.role === 'admin' || formData.email === 'harley@hyammovement.com'
+          const userData = {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.profile?.full_name || data.user.email,
+            role: data.profile?.role || 'client',
+            isAdmin
+          }
+          onLogin(userData)
         }
       }
     } catch (err) {
@@ -171,7 +185,7 @@ export default function AuthForm({ onLogin }) {
             <p className="text-sm text-gray-600 mb-2">Demo Credentials:</p>
             <div className="space-y-1 text-sm">
               <p className="font-mono text-gray-800">harley@hyammovement.com / admin123</p>
-              <p className="font-mono text-gray-800">client@demo.com / client123</p>
+              <p className="text-xs text-gray-500">Admin access with full portal control</p>
             </div>
           </div>
         )}
